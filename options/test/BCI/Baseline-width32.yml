@@ -1,0 +1,47 @@
+# Baseline test config — BCI dataset (H&E -> IHC)
+name: Baseline-BCI-width32-test
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  test:
+    name: BCI_test
+    type: PairedImageDataset
+    dataroot_gt: ./datasets/BCI/test/IHC
+    dataroot_lq: ./datasets/BCI/test/HE
+    io_backend:
+      type: disk
+
+network_g:
+  type: Baseline
+  width: 32
+  enc_blk_nums: [2, 2, 4, 8]
+  middle_blk_num: 12
+  dec_blk_nums: [2, 2, 2, 2]
+  dw_expand: 1
+  ffn_expand: 2
+
+path:
+  pretrain_network_g: ./experiments/Baseline-BCI-width32/models/net_g_latest.pth
+  strict_load_g: true
+  resume_state: ~
+
+val:
+  save_img: true
+  grids: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+
+dist_params:
+  backend: gloo
+  port: 29500

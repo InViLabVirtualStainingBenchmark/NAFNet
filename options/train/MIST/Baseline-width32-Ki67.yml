@@ -1,0 +1,96 @@
+# Baseline smoke-test config — MIST dataset (H&E -> Ki67)
+name: Baseline-MIST-Ki67-width32
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  train:
+    name: MIST_Ki67_train
+    type: PairedImageDataset
+    dataroot_gt: ./datasets/MIST/Ki67/trainB
+    dataroot_lq: ./datasets/MIST/Ki67/trainA
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 256
+    use_flip: true
+    use_rot: true
+
+    use_shuffle: true
+    num_worker_per_gpu: 2
+    batch_size_per_gpu: 1
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: MIST_Ki67_val
+    type: PairedImageDataset
+    dataroot_gt: ./datasets/MIST/Ki67/valB
+    dataroot_lq: ./datasets/MIST/Ki67/valA
+    io_backend:
+      type: disk
+
+network_g:
+  type: Baseline
+  width: 32
+  enc_blk_nums: [2, 2, 4, 8]
+  middle_blk_num: 12
+  dec_blk_nums: [2, 2, 2, 2]
+  dw_expand: 1
+  ffn_expand: 2
+
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+train:
+  optim_g:
+    type: AdamW
+    lr: !!float 1e-3
+    weight_decay: 0.
+    betas: [0.9, 0.9]
+
+  scheduler:
+    type: TrueCosineAnnealingLR
+    T_max: 20
+    eta_min: !!float 1e-7
+
+  total_iter: 20
+  warmup_iter: -1
+
+  pixel_opt:
+    type: PSNRLoss
+    loss_weight: 1
+    reduction: mean
+
+val:
+  val_freq: 20
+  save_img: false
+  use_image: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+
+logger:
+  print_freq: 5
+  save_checkpoint_freq: 20
+  use_tb_logger: false
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: gloo
+  port: 29500
