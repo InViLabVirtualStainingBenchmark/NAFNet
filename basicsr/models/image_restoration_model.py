@@ -292,7 +292,8 @@ class ImageRestorationModel(BaseModel):
             # tentative for out of GPU memory
             del self.lq
             del self.output
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             if save_img:
                 if sr_img.shape[2] == 6:
@@ -362,7 +363,8 @@ class ImageRestorationModel(BaseModel):
             keys.append(name)
             metrics.append(value)
         metrics = torch.stack(metrics, 0)
-        torch.distributed.reduce(metrics, dst=0)
+        if self.opt['dist']:
+            torch.distributed.reduce(metrics, dst=0)
         if self.opt['rank'] == 0:
             metrics_dict = {}
             cnt = 0

@@ -22,7 +22,12 @@ class BaseModel():
 
     def __init__(self, opt):
         self.opt = opt
-        self.device = torch.device('cuda' if opt['num_gpu'] != 0 else 'cpu')
+        if opt['num_gpu'] != 0 and torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        elif opt['num_gpu'] != 0 and torch.backends.mps.is_available():
+            self.device = torch.device('mps')
+        else:
+            self.device = torch.device('cpu')
         self.is_train = opt['is_train']
         self.schedulers = []
         self.optimizers = []
