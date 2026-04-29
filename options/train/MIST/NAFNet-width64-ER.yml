@@ -1,5 +1,5 @@
-# NAFNet smoke-test config — BCI dataset (H&E -> IHC)
-name: NAFNet-BCI-width32
+# NAFNet smoke-test config — MIST dataset (H&E -> ER)
+name: NAFNet-MIST-ER-width64
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,10 +7,10 @@ manual_seed: 10
 
 datasets:
   train:
-    name: BCI_train
+    name: MIST_ER_train
     type: PairedImageDataset
-    dataroot_gt: ./datasets/BCI/train/IHC
-    dataroot_lq: ./datasets/BCI/train/HE
+    dataroot_gt: ./datasets/MIST/ER/trainB
+    dataroot_lq: ./datasets/MIST/ER/trainA
 
     filename_tmpl: '{}'
     io_backend:
@@ -27,10 +27,10 @@ datasets:
     prefetch_mode: ~
 
   val:
-    name: BCI_val
+    name: MIST_ER_val
     type: PairedImageDataset
-    dataroot_gt: ./datasets/BCI/test/IHC
-    dataroot_lq: ./datasets/BCI/test/HE
+    dataroot_gt: ./datasets/MIST/ER/valB
+    dataroot_lq: ./datasets/MIST/ER/valA
     io_backend:
       type: disk
 

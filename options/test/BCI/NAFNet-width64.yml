@@ -1,5 +1,5 @@
-# Baseline test config — MIST dataset (H&E -> HER2)
-name: Baseline-MIST-HER2-width32-test
+# NAFNet test config — BCI dataset (H&E -> IHC)
+name: NAFNet-BCI-width64-test
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,24 +7,22 @@ manual_seed: 10
 
 datasets:
   test:
-    name: MIST_HER2_test
+    name: BCI_test
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/HER2/valB
-    dataroot_lq: ./datasets/MIST/HER2/valA
+    dataroot_gt: ./datasets/BCI/target
+    dataroot_lq: ./datasets/BCI/input
     io_backend:
       type: disk
 
 network_g:
-  type: Baseline
-  width: 32
+  type: NAFNet
+  width: 64
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
-  dw_expand: 1
-  ffn_expand: 2
 
 path:
-  pretrain_network_g: ./experiments/Baseline-MIST-HER2-width32/models/net_g_latest.pth
+  pretrain_network_g: ./experiments/pretrained_models/NAFNet-SIDD-width64.pth
   strict_load_g: true
   resume_state: ~
 

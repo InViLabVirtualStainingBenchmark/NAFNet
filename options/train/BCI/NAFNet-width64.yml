@@ -1,5 +1,5 @@
-# NAFNet smoke-test config — MIST dataset (H&E -> Ki67)
-name: NAFNet-MIST-Ki67-width32
+# NAFNet train config — BCI dataset (H&E -> IHC)
+name: NAFNet-BCI-width64
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,36 +7,33 @@ manual_seed: 10
 
 datasets:
   train:
-    name: MIST_Ki67_train
+    name: BCI_train
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/Ki67/trainB
-    dataroot_lq: ./datasets/MIST/Ki67/trainA
-
+    dataroot_gt: ./datasets/BCI/train/IHC
+    dataroot_lq: ./datasets/BCI/train/HE
     filename_tmpl: '{}'
     io_backend:
       type: disk
-
     gt_size: 256
     use_flip: true
     use_rot: true
-
     use_shuffle: true
-    num_worker_per_gpu: 2
+    num_worker_per_gpu: 1
     batch_size_per_gpu: 1
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
-    name: MIST_Ki67_val
+    name: BCI_val
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/Ki67/valB
-    dataroot_lq: ./datasets/MIST/Ki67/valA
+    dataroot_gt: ./datasets/BCI/target
+    dataroot_lq: ./datasets/BCI/input
     io_backend:
       type: disk
 
 network_g:
   type: NAFNet
-  width: 32
+  width: 64
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]

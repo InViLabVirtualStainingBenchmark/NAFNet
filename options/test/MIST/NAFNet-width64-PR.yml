@@ -1,5 +1,5 @@
-# NAFNet test config — MIST dataset (H&E -> PR)
-name: NAFNet-MIST-PR-width32-test
+# NAFNet test config — MIST dataset (H&E -> HER2)
+name: NAFNet-MIST-PR-width64-test
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,22 +7,22 @@ manual_seed: 10
 
 datasets:
   test:
-    name: MIST_PR_test
+    name: MIST_HER2_test
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/PR/valB
-    dataroot_lq: ./datasets/MIST/PR/valA
+    dataroot_gt: ./datasets/MiST_PR/target
+    dataroot_lq: ./datasets/MiST_PR/input
     io_backend:
       type: disk
 
 network_g:
   type: NAFNet
-  width: 32
+  width: 64
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
 
 path:
-  pretrain_network_g: ./experiments/NAFNet-MIST-PR-width32/models/net_g_latest.pth
+  pretrain_network_g: ./experiments/pretrained_models/NAFNet-SIDD-width64.pth
   strict_load_g: true
   resume_state: ~
 

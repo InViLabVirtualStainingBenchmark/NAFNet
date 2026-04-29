@@ -2,7 +2,6 @@ addict
 future
 lmdb
 numpy
-opencv-python
 Pillow
 pyyaml
 requests

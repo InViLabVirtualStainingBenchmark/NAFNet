@@ -1,140 +1,402 @@
-# NAFNet — Smoke Test Documentation
-
+# NAFNet Virtual Staining — Repository Documentation
+**Project:** Virtual Staining Benchmark | KdG Hogeschool | April 2026  
+**Status:** Inference + Smoke Training confirmed working on BCI and MIST datasets
+ 
 ---
-
-## Model Info
-
-- **Model name:** NAFNet + Baseline
-- **Upstream repo URL:** https://github.com/megvii-research/NAFNet
-- **Upstream last commit date:** 2022-08-02
-- **Paper / citation:** Chen et al., "Simple Baselines for Image Restoration", ECCV 2022
-- **MIST dataset citation:** Li et al., "Adaptive supervised PatchNCE loss for learning H&E-to-IHC stain translation with inconsistent groundtruth image pairs", MICCAI 2023, pp. 632–641, Springer
-- **Paired or unpaired assumption:** Paired
-- **Intended staining task:** H&E to IHC (BCI dataset); generalised to H&E → HER2 / ER / Ki67 / PR IHC (MIST dataset)
-
+ 
+## 1. Repository Profile
+ 
+| Field | Value |
+|---|---|
+| Model Name | NAFNet (Nonlinear Activation Free Network) |
+| Original Task | Image Restoration (Denoising / Deblurring) |
+| Adapted Task | Virtual Staining (Image-to-Image Translation) |
+| Pairing Mode | Paired — `PairedImageDataset` (BasicSR) |
+| Scale | 1 (same resolution in/out — no upsampling) |
+| Framework | BasicSR 1.2.0 (local install via setup.py develop) |
+| Repo | InViLab fork of official NAFNet repository |
+ 
 ---
-
-## Environment Claimed by Authors
-
-- **Python version:** 3.9.5
-- **PyTorch version:** 1.11.0
-- **CUDA version:** 11.3
-- **Requirements file present:** `requirements.txt`
-
+ 
+## 2. Environment Setup
+ 
+### Local Machine (Windows 11 — CPU only)
+ 
+| Component | Version |
+|---|---|
+| Python | 3.11 (venv via `nafnet_env/`) |
+| PyTorch | 2.11.0+cpu |
+| TorchVision | 0.26.0+cpu |
+| BasicSR | 1.2.0+efac49d (local install) |
+| OpenCV | 4.13.0 (pip) |
+| num_gpu | 1 in all configs (NAFNet falls back to CPU gracefully) |
+ 
+### Activation Command
+```powershell
+cd C:\Users\edobo\IdeaProjects\NAFNet
+nafnet_env\Scripts\activate
+```
+ 
+### HPC (UA Tier2 — future)
+> When moving to HPC: load modules instead of pip installing torch/opencv.  
+> The same configs work — only `num_gpu`, `num_worker_per_gpu`, and dataset paths need updating.  
+> Datasets must be transferred separately via rsync (excluded from git).
+ 
+```bash
+module load Python/3.9.25
+module load PyTorch-bundle/2.1.2-foss-2023a-CUDA-12.1.1
+module load OpenCV/4.8.1-foss-2023a-contrib
+```
+ 
 ---
-
-## Environment Actually Used
-
-- **Python version:** 3.11.9
-- **PyTorch version:** 2.11.0
-- **TorchVision version:** 0.26.0
-- **CUDA version:** N/A — Apple MPS backend
-- **OS:** macOS (Apple Silicon M2)
-- **Date tested:** 2026-04-20
-- **Hardware:** Apple M2 (MPS, `num_gpu: 1`)
-
-Exact working package versions are in `requirements_frozen.txt`.
-
+ 
+## 3. Critical Setup Fixes Applied
+ 
+### Fix 1 — Missing `basicsr/__init__.py`
+The NAFNet repo ships without `basicsr/__init__.py`. Without it, Python treats `basicsr/` as a namespace package and cannot resolve `create_model`.
+ 
+```powershell
+New-Item basicsr/__init__.py -ItemType File
+```
+ 
+### Fix 2 — PyTorch 2.x Compatibility (`patch_torch2.py`)
+BasicSR was written for PyTorch 1.x. Two breaking changes in PyTorch 2.x need patching across `basicsr/` source files:
+ 
+| Location | Old Code | New Code |
+|---|---|---|
+| `basicsr/models/*.py` | `torch.cuda.amp.autocast` | `torch.amp.autocast('cuda')` |
+| `basicsr/utils/*.py` | `from torch._six import string_classes` | `string_classes = str` |
+ 
+Run `patch_torch2.py` once after setup — it edits the files in place.
+ 
+### Fix 3 — TorchVision `functional_tensor` Removed
+TorchVision 0.26 removed `functional_tensor`. Fix in:
+```
+nafnet_env\Lib\site-packages\basicsr\data\degradations.py  (line 8)
+```
+```python
+# FROM
+from torchvision.transforms.functional_tensor import rgb_to_grayscale
+# TO
+from torchvision.transforms.functional import rgb_to_grayscale
+```
+ 
+### Fix 4 — opencv-python Conflict on HPC
+`requirements.txt` ships with `opencv-python`. On HPC this conflicts with the system OpenCV module. Remove it:
+```txt
+# opencv-python  ← removed, HPC provides OpenCV/4.8.1-foss-2023a-contrib
+```
+ 
+### Fix 5 — pip basicsr Overrides Local basicsr
+Installing `basicsr==1.4.2` via pip shadows the local NAFNet `basicsr/` folder. Solution:
+```powershell
+pip uninstall basicsr -y
+python setup.py develop --no_cuda_ext
+python -c "import basicsr; print(basicsr.__file__)"
+# Must print: ...\NAFNet\basicsr\__init__.py (NOT site-packages)
+```
+ 
 ---
-
-## Dataset Preparation
-
-NAFNet is a paired model, it expects separate folders for input (LQ) and target (GT) images.
-
-- **BCI download:** https://bupt-ai-cz.github.io/BCI/
-- **MIST download:** https://github.com/openmedlab/Awesome-Medical-Dataset/blob/main/resources/MIST-HER2.md
-
-### BCI
-
-- **Format expected by model:** separate `HE/` and `IHC/` folders, filenames matching exactly
-- **Conversion applied:** none — folders used directly
-- **Smoke test subset:** 10 train pairs + 5 test pairs copied into project
-
+ 
+## 4. Installation Order
+ 
+```powershell
+git clone https://github.com/InViLabVirtualStainingBenchmark/NAFNet
+cd NAFNet
+ 
+# 1. Fix requirements.txt — remove opencv-python line
+# 2. Install deps
+pip install -r requirements.txt
+ 
+# 3. Install NAFNet as local package
+python setup.py develop --no_cuda_ext
+ 
+# 4. Apply PyTorch 2.x patches
+python patch_torch2.py
+ 
+# 5. Fix degradations.py (torchvision)
+# Edit nafnet_env\Lib\site-packages\basicsr\data\degradations.py line 8
+ 
+# 6. Create missing __init__.py
+New-Item basicsr/__init__.py -ItemType File
+ 
+# 7. Verify
+python -c "import basicsr; print(basicsr.__file__)"
+python -c "import torch; print(torch.__version__)"
+python -c "import cv2; print(cv2.__version__)"
+```
+ 
+---
+ 
+## 5. Dataset Handling
+ 
+### How PairedImageDataset Works
+BasicSR's `PairedImageDataset` pairs images strictly **by filename**. If `input/` contains `00001.png`, it expects `target/` to also contain `00001.png`. Any mismatch in count or filename causes an `AssertionError` at startup.
+ 
+---
+ 
+### A. BCI Dataset — H&E to IHC
+ 
+| Field | Value |
+|---|---|
+| Input (lq) | HE — Hematoxylin & Eosin stained |
+| Target (gt) | IHC — Immunohistochemistry stained |
+| Test pairs used | 20 matched images |
+| Train pairs used | 20 (same as test — smoke only) |
+| Issue | First download was incomplete — HE and IHC had different filenames |
+| Fix | Redownloaded full dataset — filenames now match exactly |
+ 
+**Folder structure used:**
 ```
 datasets/BCI/
-├── train/
-│   ├── HE/    # H&E input images
-│   └── IHC/   # IHC target images
-└── test/
-    ├── HE/
-    └── IHC/
+    input/        ← dataroot_lq (HE images)
+    target/       ← dataroot_gt (IHC images)
+    train/
+        HE/       ← dataroot_lq (training)
+        IHC/      ← dataroot_gt (training)
 ```
-
-### MIST
-
-- **Format expected by model:** separate `trainA/` (H&E) and `trainB/` (stained) folders, filenames matching exactly
-- **Note:** local `valA/valB` folders serve as the test split
-- **Conversion applied:** none — folders used directly
-- **Smoke test subset:** 10 train pairs + 5 val pairs per stain copied into project
-
+ 
+---
+ 
+### B. MIST Dataset — H&E to Protein Marker
+ 
+| Field | Value |
+|---|---|
+| Modalities | ER, HER2, Ki67, PR |
+| Input (A) | H&E stained tissue |
+| Target (B) | Specific protein marker stain |
+| Pairs used per modality | 20 val images (smoke test) |
+ 
+**Folder structure used:**
 ```
 datasets/MIST/
-├── ER/    trainA/ trainB/ valA/ valB/
-├── HER2/  trainA/ trainB/ valA/ valB/
-├── Ki67/  trainA/ trainB/ valA/ valB/
-└── PR/    trainA/ trainB/ valA/ valB/
+    HER2/
+        trainA/   ← dataroot_lq (training input)
+        trainB/   ← dataroot_gt (training target)
+        valA/     ← dataroot_lq (validation input)
+        valB/     ← dataroot_gt (validation target)
+    ER/    (same structure)
+    Ki67/  (same structure)
+    PR/    (same structure)
+ 
+datasets/MiST_HER2/    ← flat structure used for test-only inference
+    input/
+    target/
 ```
-
+ 
 ---
-
-## Smoke Test Commands
-
-### Installation
-
-```bash
-pip install torch torchvision
-pip install -r requirements.txt
-python setup.py develop --no_cuda_ext
-```
-
-### BCI
-
-```bash
-# Train
-python basicsr/train.py -opt options/train/BCI/NAFNet-width32.yml
-python basicsr/train.py -opt options/train/BCI/Baseline-width32.yml
-
-# Test
-python basicsr/test.py -opt options/test/BCI/NAFNet-width32.yml
-python basicsr/test.py -opt options/test/BCI/Baseline-width32.yml
-```
-
-### MIST (repeat for each stain)
-
-```bash
-# Train
-python basicsr/train.py -opt options/train/MIST/NAFNet-width32-HER2.yml
-python basicsr/train.py -opt options/train/MIST/Baseline-width32-HER2.yml
-
-# Test
-python basicsr/test.py -opt options/test/MIST/NAFNet-width32-HER2.yml
-python basicsr/test.py -opt options/test/MIST/Baseline-width32-HER2.yml
-```
-
-Replace `HER2` with `ER`, `Ki67`, `PR` for other stains.
-
----
-
-## Changes Made to Original Code
-
-No model architecture, loss functions, or training logic was changed. All changes are infrastructure fixes to make the code run outside the original CUDA environment.
-
-| File | Change | Reason |
+ 
+## 6. Configuration Files
+ 
+### Network Architecture Parameters
+ 
+| Parameter | Value |
+|---|---|
+| `width` | 64 |
+| `enc_blk_nums` | [2, 2, 4, 8] |
+| `middle_blk_num` | 12 |
+| `dec_blk_nums` | [2, 2, 2, 2] |
+ 
+> width32 = ~17M params (faster, lower quality)  
+> width64 = ~67M params (slower, better quality) — used throughout
+ 
+### Training Config — Key Fields
+ 
+| Field | Local Value | HPC Value |
 |---|---|---|
-| `basicsr/models/base_model.py` line 25 | `cuda if num_gpu != 0 else cpu` → CUDA → MPS → CPU priority | Hardcoded CUDA fails on backends without CUDA support (e.g., Apple Silicon); order ensures CUDA is used first when available |
-| `basicsr/train.py` lines 170–173 | `torch.cuda.current_device()` + `.cuda()` map_location → device-agnostic `map_location=device` | Hardcoded CUDA device mapping fails when loading checkpoints on systems without CUDA |
-| `basicsr/metrics/psnr_ssim.py` lines 189–192 | `.cuda()` on kernel and tensors → `.to(device)` with CUDA → MPS → CPU detection | Hardcoded CUDA in SSIM 3D kernel fails during validation on systems without CUDA |
-| `basicsr/models/image_restoration_model.py` line 295 | `torch.cuda.empty_cache()` → conditional on `torch.cuda.is_available()` | Avoids unnecessary CUDA calls and potential unintended initialization when CUDA is not available |
-| `basicsr/models/image_restoration_model.py` line 366 | `torch.distributed.reduce()` → conditional on `self.opt['dist']` | Called unconditionally even in non-distributed mode; fails because the process group is not initialized |
-
-> **Note on `dist_params.backend`:** `nccl` is CUDA-only. Since we use `--launcher none` (no distributed training), this setting is unused during smoke tests. Set to `gloo` as a safe default and switch to `nccl` for multi-GPU training on the HPC.
-
-> **Note on `io_backend`:** `disk` reads raw image files directly — simple but slower for large datasets. `lmdb` reads from a pre-packed binary database (created via `scripts/data_preparation/`). Convert datasets to LMDB before running on the HPC.
-
+| `num_gpu` | 1 (falls back to CPU) | 1 (real GPU) |
+| `num_worker_per_gpu` | 1 | 4 |
+| `batch_size_per_gpu` | 1 | 4 |
+| `gt_size` | 256 | 256 |
+| `total_iter` | 20 (smoke) | 200,000 (full) |
+| `val_freq` | 20 | 5,000 |
+| `save_img` | false | true |
+| Optimizer | AdamW, lr=1e-3, betas=[0.9, 0.9] | same |
+| Loss | PSNRLoss | same |
+| Scheduler | TrueCosineAnnealingLR | same |
+| `dist_params backend` | gloo | nccl |
+ 
+### All Config Files
+ 
+| File | Location | Purpose |
+|---|---|---|
+| `NAFNet-width64.yml` | `options/test/BCI/` | BCI inference |
+| `NAFNet-width64-HER2.yml` | `options/test/MIST/` | MIST HER2 inference |
+| `NAFNet-width64-PR.yml` | `options/test/MIST/` | MIST PR inference |
+| `NAFNet-width64-ER.yml` | `options/test/MIST/` | MIST ER inference |
+| `NAFNet-width64-Ki67.yml` | `options/test/MIST/` | MIST Ki67 inference |
+| `NAFNet-width64.yml` | `options/train/BCI/` | BCI training |
+| `NAFNet-width64-HER2.yml` | `options/train/MIST/` | MIST HER2 training |
+| `NAFNet-width64-PR.yml` | `options/train/MIST/` | MIST PR training |
+| `NAFNet-width64-ER.yml` | `options/train/MIST/` | MIST ER training |
+| `NAFNet-width64-Ki67.yml` | `options/train/MIST/` | MIST Ki67 training |
+ 
 ---
-
-## Summary
-
-**Overall result: PASS**
-
-NAFNet smoke test completed on 2026-04-20. The full pipeline (train → test) ran successfully on macOS M2 (MPS) for both BCI and all four MIST stains (HER2, ER, Ki67, PR), for both NAFNet and Baseline models. Infrastructure fixes were applied to resolve macOS and non-CUDA compatibility issues; no model logic was changed. Frozen environment saved to `requirements_frozen.txt`.
+ 
+## 7. Execution Commands
+ 
+### Activate Environment
+```powershell
+cd C:\Users\edobo\IdeaProjects\NAFNet
+nafnet_env\Scripts\activate
+```
+ 
+### Pretrained Model Demo (Sanity Check)
+```powershell
+python basicsr/demo.py `
+  -opt options/test/SIDD/NAFNet-width64.yml `
+  --input_path ./demo/noisy.png `
+  --output_path ./results/test_output.png
+```
+ 
+### BCI
+```powershell
+# Inference (pretrained SIDD model — baseline)
+python basicsr/test.py -opt options/test/BCI/NAFNet-width64.yml
+ 
+# Smoke training (20 iters)
+python basicsr/train.py -opt options/train/BCI/NAFNet-width64.yml
+```
+ 
+### MIST
+```powershell
+# Inference
+python basicsr/test.py -opt options/test/MIST/NAFNet-width64-HER2.yml
+python basicsr/test.py -opt options/test/MIST/NAFNet-width64-PR.yml
+python basicsr/test.py -opt options/test/MIST/NAFNet-width64-ER.yml
+python basicsr/test.py -opt options/test/MIST/NAFNet-width64-Ki67.yml
+ 
+# Training (run sequentially)
+python basicsr/train.py -opt options/train/MIST/NAFNet-width64-HER2.yml; `
+python basicsr/train.py -opt options/train/MIST/NAFNet-width64-PR.yml; `
+python basicsr/train.py -opt options/train/MIST/NAFNet-width64-ER.yml; `
+python basicsr/train.py -opt options/train/MIST/NAFNet-width64-Ki67.yml
+```
+ 
+### View Results (Side-by-Side Comparison)
+```powershell
+python -c "
+from PIL import Image, ImageDraw
+import os
+ 
+vis_path = './results/NAFNet-BCI-width64-test/visualization/BCI_test'
+input_path = './datasets/BCI/input'
+target_path = './datasets/BCI/target'
+ 
+files = os.listdir(vis_path)[:3]
+for f in files:
+    name = os.path.splitext(f)[0].replace('_gt', '')
+    input_img = Image.open(os.path.join(input_path, name + '.png'))
+    output_img = Image.open(os.path.join(vis_path, f))
+    target_img = Image.open(os.path.join(target_path, name + '.png'))
+    w, h = input_img.size
+    combined = Image.new('RGB', (w*3 + 20, h + 30), (255,255,255))
+    combined.paste(input_img, (0, 30))
+    combined.paste(output_img, (w + 10, 30))
+    combined.paste(target_img, (w*2 + 20, 30))
+    draw = ImageDraw.Draw(combined)
+    draw.text((w//2 - 20, 5), 'HE Input', fill='black')
+    draw.text((w + w//2 - 10, 5), 'NAFNet Output', fill='black')
+    draw.text((w*2 + w//2, 5), 'IHC Target', fill='black')
+    combined.show()
+"
+```
+ 
+---
+ 
+## 8. Smoke Test Results
+ 
+### Inference — Pretrained SIDD Model (Untrained Baseline)
+ 
+> These numbers are expected to be low — the model was trained on camera noise, not pathology images. They are the baseline before any domain-specific training.
+ 
+| Dataset | PSNR | SSIM |
+|---|---|---|
+| BCI (20 test images) | 14.34 dB | 0.3157 |
+| MIST HER2 (20 test images) | 5.68 dB | 0.0170 |
+| MIST PR (20 test images) | 6.10 dB | 0.0126 |
+ 
+### Training — After 20 Iterations (Smoke)
+ 
+| Dataset | PSNR | SSIM | vs Baseline |
+|---|---|---|---|
+| BCI | 16.08 dB | 0.2367 | +1.74 dB |
+| MIST HER2 | 15.51 dB | 0.0831 | +9.83 dB |
+| MIST PR | 11.64 dB | 0.1712 | +5.54 dB |
+| MIST Ki67 | 14.75 dB | 0.1139 | — |
+| MIST ER | 11.60 dB | 0.0913 | — |
+ 
+> Even 20 iterations produced significant improvement — especially MiST HER2 (+9.83 dB). Full training on HPC (200k iters) is expected to push these much higher.
+ 
+---
+ 
+## 9. Pretrained Models
+ 
+| Model | Task | PSNR | Location |
+|---|---|---|---|
+| `NAFNet-SIDD-width64.pth` | Image Denoising | 40.30 dB (SIDD) | `experiments/pretrained_models/` |
+ 
+Download from: README gdrive links in the original NAFNet repo.
+ 
+---
+ 
+## 10. HPC Migration Checklist
+ 
+Make these changes to **all config files** before running on HPC:
+ 
+| Local Setting | HPC Setting |
+|---|---|
+| `num_gpu: 1` (CPU fallback) | `num_gpu: 1` (real GPU) |
+| `num_worker_per_gpu: 1` | `num_worker_per_gpu: 4` |
+| `batch_size_per_gpu: 1` | `batch_size_per_gpu: 4` |
+| `total_iter: 20` | `total_iter: 200000` |
+| `val_freq: 20` | `val_freq: 5000` |
+| `dist_params backend: gloo` | `dist_params backend: nccl` |
+ 
+### Dataset Transfer
+```bash
+rsync -avz --exclude='__pycache__' \
+  datasets/BCI/  user@login.hpc.uantwerpen.be:~/NAFNet/datasets/BCI/
+ 
+rsync -avz --exclude='__pycache__' \
+  datasets/MIST/ user@login.hpc.uantwerpen.be:~/NAFNet/datasets/MIST/
+ 
+rsync -avz \
+  experiments/pretrained_models/ \
+  user@login.hpc.uantwerpen.be:~/NAFNet/experiments/pretrained_models/
+```
+ 
+### HPC SLURM Job Script Template
+```bash
+#!/bin/bash
+#SBATCH --job-name=nafnet_train_bci
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --gres=gpu:1
+#SBATCH --time=24:00:00
+#SBATCH --partition=gpu
+ 
+module load Python/3.9.25
+module load PyTorch-bundle/2.1.2-foss-2023a-CUDA-12.1.1
+module load OpenCV/4.8.1-foss-2023a-contrib
+ 
+cd $SLURM_SUBMIT_DIR
+ 
+python basicsr/train.py -opt options/train/BCI/NAFNet-width64.yml
+```
+ 
+---
+ 
+## 11. Next Steps
+ 
+| Step | Task |
+|---|---|
+| 1 | Push NAFNet repo — all configs + fixes + `.gitignore` |
+| 2 | Transfer full datasets to HPC via rsync |
+| 3 | Update all configs for HPC (num_gpu, workers, total_iter) |
+| 4 | Submit SLURM jobs — one per dataset |
+| 5 | Monitor training logs — check PSNR curves |
+| 6 | Run test configs with fully trained models |
+| 7 | Compare PSNR/SSIM: NAFNet vs HAT → benchmark table |
+| 8 | CellPose integration on NAFNet outputs for downstream evaluation |

@@ -1,5 +1,5 @@
-# Baseline smoke-test config — MIST dataset (H&E -> PR)
-name: Baseline-MIST-PR-width32
+# NAFNet smoke-test config — MIST dataset (H&E -> HER2)
+name: NAFNet-MIST-HER2-width64
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,10 +7,10 @@ manual_seed: 10
 
 datasets:
   train:
-    name: MIST_PR_train
+    name: MIST_HER2_train
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/PR/trainB
-    dataroot_lq: ./datasets/MIST/PR/trainA
+    dataroot_gt: ./datasets/MIST/HER2/trainB
+    dataroot_lq: ./datasets/MIST/HER2/trainA
 
     filename_tmpl: '{}'
     io_backend:
@@ -27,21 +27,19 @@ datasets:
     prefetch_mode: ~
 
   val:
-    name: MIST_PR_val
+    name: MIST_HER2_val
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/PR/valB
-    dataroot_lq: ./datasets/MIST/PR/valA
+    dataroot_gt: ./datasets/MIST/HER2/valB
+    dataroot_lq: ./datasets/MIST/HER2/valA
     io_backend:
       type: disk
 
 network_g:
-  type: Baseline
+  type: NAFNet
   width: 32
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
-  dw_expand: 1
-  ffn_expand: 2
 
 path:
   pretrain_network_g: ~
