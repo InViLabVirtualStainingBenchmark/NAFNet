@@ -1,4 +1,3 @@
-# NAFNet smoke-test config — MIST dataset (H&E -> ER)
 name: NAFNet-MIST-ER-width64
 model_type: ImageRestorationModel
 scale: 1
@@ -9,34 +8,31 @@ datasets:
   train:
     name: MIST_ER_train
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/ER/trainB
-    dataroot_lq: ./datasets/MIST/ER/trainA
-
+    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/ER/trainB
+    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/ER/trainA
     filename_tmpl: '{}'
     io_backend:
       type: disk
-
     gt_size: 256
     use_flip: true
     use_rot: true
-
     use_shuffle: true
-    num_worker_per_gpu: 2
-    batch_size_per_gpu: 1
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
     name: MIST_ER_val
     type: PairedImageDataset
-    dataroot_gt: ./datasets/MIST/ER/valB
-    dataroot_lq: ./datasets/MIST/ER/valA
+    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/ER/valB
+    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/ER/valA
     io_backend:
       type: disk
 
 network_g:
   type: NAFNet
-  width: 32
+  width: 64
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
@@ -45,6 +41,10 @@ path:
   pretrain_network_g: ~
   strict_load_g: true
   resume_state: ~
+  experiments_root: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_ER
+  models: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_ER/checkpoints
+  training_states: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_ER/checkpoints
+  log: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_ER/logs
 
 train:
   optim_g:
@@ -52,25 +52,21 @@ train:
     lr: !!float 1e-3
     weight_decay: 0.
     betas: [0.9, 0.9]
-
   scheduler:
     type: TrueCosineAnnealingLR
-    T_max: 20
+    T_max: 230
     eta_min: !!float 1e-7
-
-  total_iter: 20
+  total_iter: 230
   warmup_iter: -1
-
   pixel_opt:
     type: PSNRLoss
     loss_weight: 1
     reduction: mean
 
 val:
-  val_freq: 20
+  val_freq: 230
   save_img: false
   use_image: false
-
   metrics:
     psnr:
       type: calculate_psnr
@@ -82,13 +78,13 @@ val:
       test_y_channel: false
 
 logger:
-  print_freq: 5
-  save_checkpoint_freq: 20
+  print_freq: 100
+  save_checkpoint_freq: 230
   use_tb_logger: false
   wandb:
     project: ~
     resume_id: ~
 
 dist_params:
-  backend: gloo
+  backend: nccl
   port: 29500
