@@ -21,7 +21,6 @@ datasets:
     batch_size_per_gpu: 4
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
-
   val:
     name: MIST_PR_val
     type: PairedImageDataset
