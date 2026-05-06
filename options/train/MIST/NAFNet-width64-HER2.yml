@@ -8,8 +8,8 @@ datasets:
   train:
     name: MIST_HER2_train
     type: PairedImageDataset
-    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/HER2/trainB
-    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/HER2/trainA
+    dataroot_gt: /data/MIST/HER2/trainB
+    dataroot_lq: /data/MIST/HER2/trainA
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -21,12 +21,11 @@ datasets:
     batch_size_per_gpu: 4
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
-
   val:
     name: MIST_HER2_val
     type: PairedImageDataset
-    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/HER2/valB
-    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/MIST/HER2/valA
+    dataroot_gt: /data/MIST/HER2/valB
+    dataroot_lq: /data/MIST/HER2/valA
     io_backend:
       type: disk
 
@@ -41,10 +40,10 @@ path:
   pretrain_network_g: ~
   strict_load_g: true
   resume_state: ~
-  experiments_root: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_HER2
-  models: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_HER2/checkpoints
-  training_states: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_HER2/checkpoints
-  log: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/MIST_HER2/logs
+  experiments_root: /output
+  models: /output/checkpoints
+  training_states: /output/checkpoints
+  log: /output/logs
 
 train:
   optim_g:
@@ -64,7 +63,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 230
+  val_freq: 100
   save_img: false
   use_image: false
   metrics:
@@ -80,7 +79,7 @@ val:
 logger:
   print_freq: 100
   save_checkpoint_freq: 230
-  use_tb_logger: false
+  use_tb_logger: true
   wandb:
     project: ~
     resume_id: ~
