@@ -8,8 +8,8 @@ datasets:
   train:
     name: BCI_train
     type: PairedImageDataset
-    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/BCI/IHC/train
-    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/BCI/HE/train
+    dataroot_gt: /data/IHC/train
+    dataroot_lq: /data/HE/train
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -21,12 +21,11 @@ datasets:
     batch_size_per_gpu: 4
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
-
   val:
     name: BCI_val
     type: PairedImageDataset
-    dataroot_gt: /scratch/antwerpen/212/vsc21216/unified/datasets/BCI/IHC/test
-    dataroot_lq: /scratch/antwerpen/212/vsc21216/unified/datasets/BCI/HE/test
+    dataroot_gt: /data/IHC/val
+    dataroot_lq: /data/HE/val
     io_backend:
       type: disk
 
@@ -41,10 +40,10 @@ path:
   pretrain_network_g: ~
   strict_load_g: true
   resume_state: ~
-  experiments_root: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/BCI
-  models: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/BCI/checkpoints
-  training_states: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/BCI/checkpoints
-  log: /data/antwerpen/212/vsc21216/projects/unified/outputs/nafnet/BCI/logs
+  experiments_root: /output
+  models: /output/checkpoints
+  training_states: /output/checkpoints
+  log: /output/logs
 
 train:
   optim_g:
@@ -54,9 +53,9 @@ train:
     betas: [0.9, 0.9]
   scheduler:
     type: TrueCosineAnnealingLR
-    T_max: 230
+    T_max: 974
     eta_min: !!float 1e-7
-  total_iter: 230
+  total_iter: 974
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss
@@ -64,7 +63,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 230
+  val_freq: 100
   save_img: false
   use_image: false
   metrics:
@@ -79,8 +78,8 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 230
-  use_tb_logger: false
+  save_checkpoint_freq: 974
+  use_tb_logger: true
   wandb:
     project: ~
     resume_id: ~
