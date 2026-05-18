@@ -8,8 +8,8 @@ datasets:
   train:
     name: MIST_ER_train
     type: PairedImageDataset
-    dataroot_gt: /data/train_IHC
-    dataroot_lq: /data/train_HE
+    dataroot_gt: /data/MIST/ER/TrainValAB/trainB
+    dataroot_lq: /data/MIST/ER/TrainValAB/trainA
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -24,8 +24,13 @@ datasets:
   val:
     name: MIST_ER_val
     type: PairedImageDataset
+<<<<<<< HEAD
     dataroot_gt: /data/val_IHC
     dataroot_lq: /data/val_HE
+=======
+    dataroot_gt: /data/MIST/ER/TrainValAB/valB
+    dataroot_lq: /data/MIST/ER/TrainValAB/valA
+>>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
     io_backend:
       type: disk
 
@@ -53,9 +58,15 @@ train:
     betas: [0.9, 0.9]
   scheduler:
     type: TrueCosineAnnealingLR
+<<<<<<< HEAD
     T_max: 150000
     eta_min: !!float 1e-7
   total_iter: 150000
+=======
+    T_max: 1038
+    eta_min: !!float 1e-7
+  total_iter: 1038
+>>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss
@@ -78,7 +89,11 @@ val:
 
 logger:
   print_freq: 100
+<<<<<<< HEAD
   save_checkpoint_freq: 10000
+=======
+  save_checkpoint_freq: 1038
+>>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
   use_tb_logger: true
   wandb:
     project: ~
