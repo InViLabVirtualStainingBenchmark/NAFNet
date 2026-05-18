@@ -1,4 +1,4 @@
-name: NAFNet-BCI-width64
+name: NAFNet-MIST-ER-width64
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -6,7 +6,7 @@ manual_seed: 10
 
 datasets:
   train:
-    name: BCI_train
+    name: MIST_ER_train
     type: PairedImageDataset
     dataroot_gt: /data/train_IHC
     dataroot_lq: /data/train_HE
@@ -22,10 +22,10 @@ datasets:
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
   val:
-    name: BCI_val
+    name: MIST_ER_val
     type: PairedImageDataset
-    dataroot_gt: /data/test_IHC
-    dataroot_lq: /data/test_HE
+    dataroot_gt: /data/val_IHC
+    dataroot_lq: /data/val_HE
     io_backend:
       type: disk
 
@@ -53,9 +53,9 @@ train:
     betas: [0.9, 0.9]
   scheduler:
     type: TrueCosineAnnealingLR
-    T_max: 230
+    T_max: 150000
     eta_min: !!float 1e-7
-  total_iter: 230
+  total_iter: 150000
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss
@@ -63,7 +63,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 100
+  val_freq: 1000
   save_img: false
   use_image: false
   metrics:
@@ -78,7 +78,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 230
+  save_checkpoint_freq: 10000
   use_tb_logger: true
   wandb:
     project: ~
