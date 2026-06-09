@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 *.pth
 *.state
+results/
+.eggs/
+experiments/*/models/*.pth
+experiments/*/training_states/*.state
+experiments/pretrained_models/

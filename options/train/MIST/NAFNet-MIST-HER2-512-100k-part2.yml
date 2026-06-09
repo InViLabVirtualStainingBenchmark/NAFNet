@@ -36,7 +36,7 @@ network_g:
 path:
   pretrain_network_g: ~
   strict_load_g: true
-  resume_state: /output/checkpoints/50000.state
+  resume_state: /code/NAFNet/experiments/NAFNet-MIST-HER2-512-100k-part2/training_states/60000.state
   experiments_root: /output
   models: /output/checkpoints
   training_states: /output/checkpoints

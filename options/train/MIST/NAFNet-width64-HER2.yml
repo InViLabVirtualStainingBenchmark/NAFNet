@@ -3,18 +3,12 @@ model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
 manual_seed: 10
-
 datasets:
   train:
     name: MIST_HER2_train
     type: PairedImageDataset
-<<<<<<< HEAD
     dataroot_gt: /data/train_IHC
     dataroot_lq: /data/train_HE
-=======
-    dataroot_gt: /data/MIST/HER2/TrainValAB/trainB
-    dataroot_lq: /data/MIST/HER2/TrainValAB/trainA
->>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -29,23 +23,16 @@ datasets:
   val:
     name: MIST_HER2_val
     type: PairedImageDataset
-<<<<<<< HEAD
     dataroot_gt: /data/val_IHC
     dataroot_lq: /data/val_HE
-=======
-    dataroot_gt: /data/MIST/HER2/TrainValAB/valB
-    dataroot_lq: /data/MIST/HER2/TrainValAB/valA
->>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
     io_backend:
       type: disk
-
 network_g:
   type: NAFNet
   width: 64
   enc_blk_nums: [2, 2, 4, 8]
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
-
 path:
   pretrain_network_g: ~
   strict_load_g: true
@@ -54,7 +41,6 @@ path:
   models: /output/checkpoints
   training_states: /output/checkpoints
   log: /output/logs
-
 train:
   optim_g:
     type: AdamW
@@ -63,21 +49,14 @@ train:
     betas: [0.9, 0.9]
   scheduler:
     type: TrueCosineAnnealingLR
-<<<<<<< HEAD
-    T_max: 150000
+    T_max: 50000
     eta_min: !!float 1e-7
-  total_iter: 150000
-=======
-    T_max: 1161
-    eta_min: !!float 1e-7
-  total_iter: 1161
->>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
+  total_iter: 50000
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss
     loss_weight: 1
     reduction: mean
-
 val:
   val_freq: 1000
   save_img: false
@@ -91,19 +70,13 @@ val:
       type: calculate_ssim
       crop_border: 0
       test_y_channel: false
-
 logger:
   print_freq: 100
-<<<<<<< HEAD
-  save_checkpoint_freq: 10000
-=======
-  save_checkpoint_freq: 1161
->>>>>>> e7bb7904da4915a181cb9cb20fe25ec5051d9f24
+  save_checkpoint_freq: 15000
   use_tb_logger: true
   wandb:
     project: ~
     resume_id: ~
-
 dist_params:
   backend: nccl
   port: 29500

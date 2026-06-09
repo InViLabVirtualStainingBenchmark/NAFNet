@@ -51,7 +51,7 @@ train:
     type: TrueCosineAnnealingLR
     T_max: 100000
     eta_min: !!float 1e-7
-  total_iter: 50000
+  total_iter: 45000
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss

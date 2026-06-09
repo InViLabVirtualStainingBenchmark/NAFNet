@@ -72,7 +72,7 @@ val:
       test_y_channel: false
 logger:
   print_freq: 100
-  save_checkpoint_freq: 10000
+  save_checkpoint_freq: 15000
   use_tb_logger: true
   wandb:
     project: ~
