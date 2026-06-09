@@ -1,9 +1,9 @@
----
+--- 
 # NAFNet: BCI Virtual Staining
 Local setup and initial training for H&E → IHC translation · BCI & MIST Datasets · April 2026
 
-> **Note:** This documents the local development setup and smoke training on Windows (CPU only).
-> For HPC training, inference, and evaluation on the CalcUA cluster, see [HPC-Instruction.md](HPC-Instruction.md).
+> **Note:** This documents the local development setup and smoke training on Windows 11 (CPU only).
+> For HPC training, inference, and evaluation on the CalcUA cluster, see [HPC-Instruction.md](HPC-INSTRUCTION.md).
 > See the [official NAFNet repository](https://github.com/megvii-research/NAFNet) for the original codebase.
 
 ---
@@ -25,18 +25,18 @@ Local setup ran on **Windows 11, CPU only** — no GPU available on the developm
 
 | Component | Version |
 |-----------|---------|
-| Python | 3.11 (venv via `nafnet_env/`) |
+| Python | 3.11 |
 | PyTorch | 2.11.0+cpu |
 | TorchVision | 0.26.0+cpu |
 | BasicSR | 1.2.0+efac49d (local install via `setup.py develop`) |
 | OpenCV | 4.13.0 |
 
+Create a virtual environment and activate it:
+
 ```powershell
-cd C:\Users\edobo\IdeaProjects\NAFNet
+python -m venv nafnet_env        # name it whatever you prefer
 nafnet_env\Scripts\activate
 ```
-
-A unified conda environment (`vs_ua`) is used on Thomas's PC for GPU-accelerated runs across all benchmark models.
 
 ---
 
@@ -56,7 +56,7 @@ python setup.py develop --no_cuda_ext
 # 4. Apply PyTorch 2.x compatibility patches
 python patch_torch2.py
 
-# 5. Fix TorchVision deprecation (see Fix 3 below)
+# 5. Fix TorchVision deprecation — see Fix 3 below
 
 # 6. Create missing __init__.py
 New-Item basicsr/__init__.py -ItemType File
@@ -67,21 +67,21 @@ python -c "import torch; print(torch.__version__)"
 python -c "import cv2; print(cv2.__version__)"
 ```
 
-> `basicsr/__init__.py` must resolve to `...\NAFNet\basicsr\__init__.py` — not `site-packages`. If it resolves to site-packages, run `pip uninstall basicsr -y` and reinstall via `setup.py develop`.
-
 ---
 
-## 4. Compatibility Fixes
+## 4. Compatibility Fixes & Modifications
 
-NAFNet ships with BasicSR 1.x which requires several patches for modern Python/PyTorch environments.
+NAFNet ships with BasicSR 1.x which requires several patches for modern Python/PyTorch environments. These are applied once during setup and committed to the repo.
 
 ### Fix 1 — Missing `basicsr/__init__.py`
 
-The NAFNet repo ships without `basicsr/__init__.py`. Without it, Python treats `basicsr/` as a namespace package and cannot resolve `create_model`.
+The NAFNet repo ships without `basicsr/__init__.py`. Without it, Python treats `basicsr/` as a namespace package and cannot resolve `create_model`:
 
 ```powershell
 New-Item basicsr/__init__.py -ItemType File
 ```
+
+> After setup, verify `import basicsr` resolves to `...\NAFNet\basicsr\__init__.py` and not `site-packages`. If it resolves to site-packages, run `pip uninstall basicsr -y` then reinstall via `python setup.py develop --no_cuda_ext`.
 
 ### Fix 2 — PyTorch 2.x Compatibility (`patch_torch2.py`)
 
@@ -117,6 +117,10 @@ pip uninstall basicsr -y
 python setup.py develop --no_cuda_ext
 ```
 
+### Modification — `basicsr/models/image_restoration_model.py`
+
+Added saving of the H&E input image (`_he.png`) alongside prediction and ground truth during inference. The `lq` tensor is extracted from `visuals` before `del self.lq` is called, then saved with the `_he` suffix.
+
 ---
 
 ## 5. Dataset Preparation
@@ -143,7 +147,7 @@ datasets/MIST/
 └── PR/     (same structure)
 ```
 
-> For HPC training, datasets are stored as SquashFS images with a neutral `HE/` / `IHC/` structure and symlinked at runtime. See [HPC-Instruction.md](HPC-Instruction.md).
+> For HPC training, datasets are stored as SquashFS images with a neutral `HE/` / `IHC/` structure and symlinked at runtime. See [HPC-Instruction.md](HPC-INSTRUCTION.md).
 
 ---
 
@@ -177,26 +181,32 @@ python basicsr/train.py -opt options/train/MIST/NAFNet-MIST-Ki67-local-smoke.yml
 python basicsr/train.py -opt options/train/MIST/NAFNet-MIST-PR-local-smoke.yml
 ```
 
-Full benchmark training (100k iterations) runs on HPC — see [HPC-Instruction.md](HPC-Instruction.md).
+Full benchmark training (100k iterations) runs on HPC — see [HPC-Instruction.md](HPC-INSTRUCTION.md).
 
 ---
 
 ## 8. Inference
 
-Inference uses `basicsr/test.py` with the corresponding test config.
+Inference uses `basicsr/test.py` with the corresponding test config:
 
 ```powershell
-# BCI (local smoke)
+# BCI
 python basicsr/test.py -opt options/test/BCI/NAFNet-BCI-local-smoke.yml
 
-# MIST (local smoke)
+# MIST
 python basicsr/test.py -opt options/test/MIST/NAFNet-MIST-ER-local-smoke.yml
 python basicsr/test.py -opt options/test/MIST/NAFNet-MIST-HER2-local-smoke.yml
 python basicsr/test.py -opt options/test/MIST/NAFNet-MIST-Ki67-local-smoke.yml
 python basicsr/test.py -opt options/test/MIST/NAFNet-MIST-PR-local-smoke.yml
 ```
 
-Results are saved to `results/` with three images per sample: `{name}.png` (predicted), `{name}_gt.png` (ground truth), `{name}_he.png` (H&E input).
+Results are saved to `results/` (created automatically on first run) with three images per sample:
+
+| File | Content |
+|------|---------|
+| `{name}.png` | Predicted IHC |
+| `{name}_gt.png` | Ground truth IHC |
+| `{name}_he.png` | H&E input |
 
 To view side-by-side comparisons locally:
 
@@ -228,7 +238,7 @@ python scripts/view_results.py --dataset BCI
 | MIST Ki67 | 14.75 dB | 0.1139 | — |
 | MIST ER | 11.60 dB | 0.0913 | — |
 
-> Even 20 iterations produced significant improvement — especially MIST HER2 (+9.83 dB). Full HPC training (100k iters) results are in [HPC-Instruction.md](HPC-Instruction.md).
+> Even 20 iterations produced significant improvement — especially MIST HER2 (+9.83 dB). Full HPC training results (100k iters) are in [HPC-Instruction.md](HPC-INSTRUCTION.md).
 
 ---
 
@@ -248,15 +258,3 @@ python basicsr/demo.py `
   --input_path ./demo/noisy.png `
   --output_path ./results/test_output.png
 ```
-
----
-
-## 11. Modifications
-
-### `basicsr/models/image_restoration_model.py`
-
-Added saving of the H&E input image (`_he.png`) alongside prediction and ground truth during inference. The `lq` tensor is extracted from `visuals` before `del self.lq` is called, then saved with the `_he` suffix.
-
-### `basicsr/__init__.py`
-
-Created — missing from the original repo. Required for Python to treat `basicsr/` as a proper package rather than a namespace package.
