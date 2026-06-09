@@ -1,0 +1,39 @@
+name: NAFNet-BCI-width64-test
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+datasets:
+  test:
+    name: BCI_test
+    type: PairedImageDataset
+    dataroot_gt: /data/test_IHC
+    dataroot_lq: /data/test_HE
+    io_backend:
+      type: disk
+network_g:
+  type: NAFNet
+  width: 64
+  enc_blk_nums: [2, 2, 4, 8]
+  middle_blk_num: 12
+  dec_blk_nums: [2, 2, 2, 2]
+path:
+  pretrain_network_g: /checkpoint/net_g_140000.pth
+  strict_load_g: true
+  resume_state: ~
+  results_root: /output
+val:
+  save_img: true
+  grids: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+dist_params:
+  backend: gloo
+  port: 29500
