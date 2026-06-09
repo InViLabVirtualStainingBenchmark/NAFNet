@@ -8,24 +8,24 @@ datasets:
   train:
     name: BCI_train
     type: PairedImageDataset
-    dataroot_gt: /data/IHC/train
-    dataroot_lq: /data/HE/train
+    dataroot_gt: /data/train_IHC
+    dataroot_lq: /data/train_HE
     filename_tmpl: '{}'
     io_backend:
       type: disk
-    gt_size: 256
+    gt_size: 512
     use_flip: true
     use_rot: true
     use_shuffle: true
     num_worker_per_gpu: 4
-    batch_size_per_gpu: 4
+    batch_size_per_gpu: 1
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
   val:
     name: BCI_val
     type: PairedImageDataset
-    dataroot_gt: /data/IHC/val
-    dataroot_lq: /data/HE/val
+    dataroot_gt: /data/val_IHC
+    dataroot_lq: /data/val_HE
     io_backend:
       type: disk
 
@@ -53,9 +53,9 @@ train:
     betas: [0.9, 0.9]
   scheduler:
     type: TrueCosineAnnealingLR
-    T_max: 974
+    T_max: 150000
     eta_min: !!float 1e-7
-  total_iter: 974
+  total_iter: 150000
   warmup_iter: -1
   pixel_opt:
     type: PSNRLoss
@@ -63,7 +63,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 100
+  val_freq: 1000
   save_img: false
   use_image: false
   metrics:
@@ -78,7 +78,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 974
+  save_checkpoint_freq: 15000
   use_tb_logger: true
   wandb:
     project: ~

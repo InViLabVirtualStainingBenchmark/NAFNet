@@ -285,6 +285,7 @@ class ImageRestorationModel(BaseModel):
 
             visuals = self.get_current_visuals()
             sr_img = tensor2img([visuals['result']], rgb2bgr=rgb2bgr)
+            lq_img = tensor2img([visuals['lq']], rgb2bgr=rgb2bgr)
             if 'gt' in visuals:
                 gt_img = tensor2img([visuals['gt']], rgb2bgr=rgb2bgr)
                 del self.gt
@@ -323,8 +324,12 @@ class ImageRestorationModel(BaseModel):
                             self.opt['path']['visualization'], dataset_name,
                             f'{img_name}_gt.png')
 
+                    save_lq_img_path = osp.join(
+                            self.opt['path']['visualization'], dataset_name,
+                            f'{img_name}_he.png')
                     imwrite(sr_img, save_img_path)
                     imwrite(gt_img, save_gt_img_path)
+                    imwrite(lq_img, save_lq_img_path)
 
             if with_metrics:
                 # calculate metrics

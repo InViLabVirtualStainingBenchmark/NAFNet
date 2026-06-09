@@ -1,4 +1,4 @@
-name: NAFNet-BCI-width64-test
+name: NAFNet-BCI-512-100k-test
 model_type: ImageRestorationModel
 scale: 1
 num_gpu: 1
@@ -7,8 +7,8 @@ datasets:
   test:
     name: BCI_test
     type: PairedImageDataset
-    dataroot_gt: /data/test_IHC
-    dataroot_lq: /data/test_HE
+    dataroot_gt: /tmp/bci/test_IHC
+    dataroot_lq: /tmp/bci/test_HE
     io_backend:
       type: disk
 network_g:
@@ -18,7 +18,7 @@ network_g:
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
 path:
-  pretrain_network_g: /checkpoint/net_g_140000.pth
+  pretrain_network_g: /checkpoint/net_g_best.pth
   strict_load_g: true
   resume_state: ~
   results_root: /output
