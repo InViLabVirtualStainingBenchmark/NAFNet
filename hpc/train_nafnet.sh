@@ -1,35 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=train_nafnet
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=60G
-#SBATCH --time=23:00:00
-#SBATCH -A ap_invilab
-#SBATCH -p ampere_gpu
-#SBATCH --gpus-per-node=1
-#SBATCH -o /data/antwerpen/212/vsc21216/projects/logs/nafnet_%j.out
-#SBATCH -e /data/antwerpen/212/vsc21216/projects/logs/nafnet_%j.err
-
-set -euo pipefail
-
-CONTAINER="$VSC_SCRATCH/containers/basicsr_nvidia.sif"
-CODE_DIR="$VSC_DATA/projects/code"
-DATA_SQSH="$VSC_SCRATCH/BCI_basicsr_split.sqsh"
-OUTPUT_DIR="$VSC_DATA/projects/outputs/nafnet"
-
-mkdir -p "$OUTPUT_DIR"
-
-nvidia-smi --query-gpu=timestamp,index,utilization.gpu,utilization.memory,memory.used,memory.total \
-           --format=csv -l 5 > "$OUTPUT_DIR/gpu_usage.csv" &
-GPU_LOG_PID=$!
-
-srun apptainer exec \
-    --nv \
-    -B "$CODE_DIR":/code \
-    -B "$DATA_SQSH":/data:image-src=/ \
-    -B "$OUTPUT_DIR":/output \
-    "$CONTAINER" \
-    bash /code/NAFNet/train_nafnet.sh
-
-kill $GPU_LOG_PID || true
+CONFIG=${1:-options/train/BCI/NAFNet-BCI-512-100k-part1.yml}
+export PYTHONPATH=/code/NAFNet:/usr/local/lib64/python3.9/site-packages:$PYTHONPATH
+cd /code/NAFNet
+python3 basicsr/train.py \
+    -opt $CONFIG \
+    2>&1 | tee /output/train_log.txt

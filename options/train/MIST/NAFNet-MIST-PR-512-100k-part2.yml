@@ -34,9 +34,9 @@ network_g:
   middle_blk_num: 12
   dec_blk_nums: [2, 2, 2, 2]
 path:
-  pretrain_network_g: ~
+  pretrain_network_g: /code/NAFNet/experiments/NAFNet-MIST-PR-512-100k-part2/models/net_g_latest.pth
   strict_load_g: true
-  resume_state: /output/checkpoints/50000.state
+  resume_state: /code/NAFNet/experiments/NAFNet-MIST-PR-512-100k-part2/training_states/90000.state
   experiments_root: /output
   models: /output/checkpoints
   training_states: /output/checkpoints
